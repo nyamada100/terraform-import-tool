@@ -1,0 +1,10 @@
+# 設定ファイル
+
+[terraformer]
+import_dir = "Terraformerの実行結果ディレクトリへのパス"
+tfstate_file = "Terraformerの実行結果ディレクトリ内のtfstateファイル名"
+
+[tfstate]
+old_state_files = [
+  "比較する既存tfstateファイルへのパス"
+]

@@ -1,0 +1,2 @@
+# terraform-import-tool
+terraformerの結果と既存tfstateを比較して新規リソース定義を抜き出す
