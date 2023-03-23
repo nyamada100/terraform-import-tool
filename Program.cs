@@ -1,11 +1,14 @@
 ﻿using System.IO;
+using Microsoft.Extensions.Logging;
 using ZLogger;
 
 var app = ConsoleApp.CreateBuilder(args)
     .ConfigureLogging(x =>
     {
-        x.AddZLoggerConsole(); // add ZLogger Console
-        x.AddZLoggerFile("terraform-import-tool.log"); // add ZLogger file output
+        x.ClearProviders();
+        x.SetMinimumLevel(LogLevel.Information);
+        x.AddZLoggerConsole(); 
+        x.AddZLoggerFile("terraform-import-tool.log"); 
     })
     .Build();
 

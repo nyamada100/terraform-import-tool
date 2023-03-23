@@ -46,27 +46,27 @@ internal class Terraform
 
     internal async ValueTask ImportNewResourceAsync(TfstateLookup tfStateLookup, string res, DirectoryInfo newResourceDir)
     {
-        this.logger.ZLogInformation($"import start: {DateTime.Now}");
+        this.logger.ZLogDebug($"import start: {DateTime.Now}");
 
         var type = res.Substring(0, res.IndexOf('.'));
 
         var resourceAddress = $"{res}.{Resources[type]}";
 
-        this.logger.ZLogInformation($"lookup start: {DateTime.Now}");
+        this.logger.ZLogDebug($"lookup start: {DateTime.Now}");
         var r = await ValueTaskEx.WhenAll(STATE_FILES.Select(s =>
             tfStateLookup.LookupAsync(s, resourceAddress)
         ));
-        this.logger.ZLogInformation($"lookup end: {DateTime.Now}");
+        this.logger.ZLogDebug($"lookup end: {DateTime.Now}");
 
         if (r.All(s => s == "null"))
         {
             //存在しない(すべてnull)のでインポート
-            this.logger.ZLogInformation($"write start: {DateTime.Now}");
+            this.logger.ZLogDebug($"write start: {DateTime.Now}");
             await WriteToFile(res, newResourceDir);
-            this.logger.ZLogInformation($"write end: {DateTime.Now}");
+            this.logger.ZLogDebug($"write end: {DateTime.Now}");
         }
 
-        this.logger!.ZLogInformation($"import end: {DateTime.Now}");
+        this.logger!.ZLogDebug($"import end: {DateTime.Now}");
     }
 
     private static async ValueTask WriteToFile(string res, DirectoryInfo newResourceDir)
