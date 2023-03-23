@@ -8,10 +8,10 @@ using ZLogger;
 
 internal class Terraform
 {
-    static readonly string TERRAFORMER_TFSTATE;
+    static readonly string NEW_STATE_FILE;
     const string RESOURCE_IDENTIFIER_CSV = "resource_identifier.csv";
 
-    static readonly string TERRAFORMER_DIR;
+    static readonly string NEW_STATE_DIR;
 
     static readonly IEnumerable<string> STATE_FILES;
 
@@ -27,8 +27,11 @@ internal class Terraform
         TomlTable table = TOML.Parse(reader);
 
         STATE_FILES = table["tfstate"]["old_state_files"].AsArray.Children.AsEnumerable<TomlNode>().Select(node => node.ToString()!);
-        TERRAFORMER_DIR = table["terraformer"]["import_dir"].AsString;
-        TERRAFORMER_TFSTATE = table["terraformer"]["tfstate_file"].AsString;
+        
+        var newStateFile = table["tfstate"]["new_state_file"].AsString.ToString();
+
+        NEW_STATE_DIR=Path.GetDirectoryName(newStateFile)!;
+        NEW_STATE_FILE=Path.GetFileName(newStateFile)!;
     }
 
     public Terraform(ILogger logger)
@@ -38,7 +41,7 @@ internal class Terraform
 
     internal async IAsyncEnumerable<string> StateListAsync()
     {
-        await foreach (var r in ProcessX.StartAsync($"terraform -chdir={TERRAFORMER_DIR} state list -state {TERRAFORMER_TFSTATE}"))
+        await foreach (var r in ProcessX.StartAsync($"terraform -chdir={NEW_STATE_DIR} state list -state {NEW_STATE_FILE}"))
         {
             yield return r;
         }
@@ -72,7 +75,7 @@ internal class Terraform
     private static async ValueTask WriteToFile(string res, DirectoryInfo newResourceDir)
     {
         var newTfFile = $"{res.Replace('.', '-')}.tf";
-        await foreach (var line in ProcessX.StartAsync($"terraform -chdir={TERRAFORMER_DIR} state show -no-color -state {TERRAFORMER_TFSTATE} {res}"))
+        await foreach (var line in ProcessX.StartAsync($"terraform -chdir={NEW_STATE_DIR} state show -no-color -state {NEW_STATE_FILE} {res}"))
         {
             await File.AppendAllTextAsync(Path.Combine(newResourceDir.FullName, newTfFile), line + Environment.NewLine);
         }
