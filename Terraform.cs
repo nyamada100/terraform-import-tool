@@ -56,7 +56,7 @@ internal class Terraform
         var r = await ValueTaskEx.WhenAll(STATE_FILES.Select(s =>
             tfStateLookup.LookupAsync(s, resourceAddress)
         ));
-        this.logger?.ZLogInformation($"lookup end: {DateTime.Now}");
+        this.logger.ZLogInformation($"lookup end: {DateTime.Now}");
 
         if (r.All(s => s == "null"))
         {
@@ -66,7 +66,7 @@ internal class Terraform
             this.logger.ZLogInformation($"write end: {DateTime.Now}");
         }
 
-        this.logger.ZLogInformation($"import end: {DateTime.Now}");
+        this.logger!.ZLogInformation($"import end: {DateTime.Now}");
     }
 
     private static async ValueTask WriteToFile(string res, DirectoryInfo newResourceDir)
