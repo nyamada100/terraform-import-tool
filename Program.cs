@@ -7,12 +7,13 @@ var app = ConsoleApp.CreateBuilder(args)
     {
         x.ClearProviders();
         x.SetMinimumLevel(LogLevel.Information);
-        x.AddZLoggerConsole(); 
-        x.AddZLoggerFile("terraform-import-tool.log"); 
+        x.AddZLoggerConsole();
+        x.AddZLoggerFile("terraform-import-tool.log");
     })
     .Build();
 
-app.AddRootCommand("new resource import", async ()=>{
+app.AddRootCommand("new resource import", async () =>
+{
     app.Logger.ZLogInformation($"start program: {DateTime.Now}");
 
     await MainAsync();
@@ -37,8 +38,34 @@ async ValueTask<int> MainAsync()
         await terraform.ImportNewResourceAsync(tfStateLookup, res, newResourceDir);
     }
 
+    ConcatFiles(NEW_RESOURCE_DIR);
+
     return 0;
 }
 
+void ConcatFiles(string resourceDir)
+{
+    var concatDir = Path.Combine(resourceDir, "concat");
+    if (Directory.Exists(concatDir))
+    {
+        Directory.Delete(concatDir);
+    }
+    Directory.CreateDirectory(concatDir);
+    new DirectoryInfo(resourceDir).GetFiles().GroupBy(f => f.Name.Substring(0, f.Name.IndexOf("-"))).ToList().ForEach(g =>
+    {
+        var resource = g.Key;
+        var destFile = Path.Combine(concatDir, $"{resource}.tf");
+        using (Stream destStream = File.Create(destFile))
+        {
+            foreach (var item in g)
+            {
+                using (Stream srcStream = File.OpenRead(item.FullName))
+                {
+                    srcStream.CopyTo(destStream);
+                }
+            }
+        }
+    });
+}
 
 app.Run();

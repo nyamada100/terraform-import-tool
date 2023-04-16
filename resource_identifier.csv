@@ -104,3 +104,8 @@ aws_sfn_state_machine,id
 aws_volume_attachment,id
 aws_vpc_peering_connection,id
 aws_vpn_gateway,id
+aws_flow_log,id
+aws_launch_template,id
+aws_vpc_dhcp_options,id
+aws_vpc_dhcp_options_association,id
+aws_vpc_endpoint,id

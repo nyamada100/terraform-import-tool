@@ -40,6 +40,7 @@ internal class Terraform
     {
         await foreach (var r in ProcessX.StartAsync($"terraform -chdir={TERRAFORMER_DIR} state list -state {TERRAFORMER_TFSTATE}"))
         {
+            if(r.StartsWith("data.")){continue;}
             yield return r;
         }
     }
