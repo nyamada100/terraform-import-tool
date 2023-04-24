@@ -1,6 +1,6 @@
-﻿using System.IO;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using ZLogger;
+using ValueTaskSupplement;
 
 var app = ConsoleApp.CreateBuilder(args)
     .ConfigureLogging(x =>
@@ -21,6 +21,13 @@ app.AddRootCommand("new resource import", async () =>
     app.Logger.ZLogInformation($"end program: {DateTime.Now}");
 });
 
+app.Run();
+
+/// <summary>
+/// メインロジック
+/// 新たなTerraform stateリストから、古いstateに存在しないリソース定義を抜き出してリソース定義ファイルを作成する
+/// </summary>
+/// <returns></returns>
 async ValueTask<int> MainAsync()
 {
     const string NEW_RESOURCE_DIR = "new_resource";
@@ -30,7 +37,7 @@ async ValueTask<int> MainAsync()
         Directory.Delete(NEW_RESOURCE_DIR, true);
     }
     var newResourceDir = Directory.CreateDirectory(NEW_RESOURCE_DIR);
-    var tfStateLookup = new TfstateLookup();
+    var tfStateLookup = new TfstateLookup(app.Logger);
     var terraform = new Terraform(app.Logger);
 
     await foreach (string res in terraform.StateListAsync())
@@ -43,29 +50,43 @@ async ValueTask<int> MainAsync()
     return 0;
 }
 
-void ConcatFiles(string resourceDir)
+/// <summary>
+/// 同じリソースタイプの定義を1つのファイルにまとめる
+/// </summary>
+/// <param name="resourceDir">リソース定義ファイルのあるディレクトリ</param>
+/// <returns>なし</returns>
+async void ConcatFiles(string resourceDir)
 {
     var concatDir = Path.Combine(resourceDir, "concat");
     if (Directory.Exists(concatDir))
     {
         Directory.Delete(concatDir);
     }
-    Directory.CreateDirectory(concatDir);
-    new DirectoryInfo(resourceDir).GetFiles().GroupBy(f => f.Name.Substring(0, f.Name.IndexOf("-"))).ToList().ForEach(g =>
-    {
-        var resource = g.Key;
-        var destFile = Path.Combine(concatDir, $"{resource}.tf");
-        using (Stream destStream = File.Create(destFile))
-        {
-            foreach (var item in g)
-            {
-                using (Stream srcStream = File.OpenRead(item.FullName))
-                {
-                    srcStream.CopyTo(destStream);
-                }
-            }
-        }
-    });
+    var dir = Directory.CreateDirectory(concatDir);
+    var groups = Directory.EnumerateFiles(resourceDir).GroupBy(f => f.Substring(0, f.IndexOf("-")));
+
+    await ValueTaskEx.WhenAll(groups.Select(group =>
+        ConcatFilesAsync(group, dir)
+    ));
 }
 
-app.Run();
+/// <summary>
+/// ファイルグループを、グループごとに1つのファイルにまとめて指定されたディレクトリに作成する
+/// </summary>
+/// <param name="group">ファイルグループ</param>
+/// <param name="concatDir">ファイルを作成するディレクトリ</param>
+/// <returns></returns>
+static async ValueTask ConcatFilesAsync(IGrouping<string, string> group, DirectoryInfo concatDir)
+{
+    var resource = group.Key;
+
+    var destFile = Path.Combine(concatDir.FullName, $"{resource}.tf");
+
+    using var destStream = File.Create(destFile);
+    foreach (var item in group)
+    {
+        using var srcStream = File.OpenRead(item);
+        await srcStream.CopyToAsync(destStream);
+    }
+    
+}
