@@ -63,7 +63,7 @@ async void ConcatFiles(string resourceDir)
         Directory.Delete(concatDir);
     }
     var dir = Directory.CreateDirectory(concatDir);
-    var groups = Directory.EnumerateFiles(resourceDir).GroupBy(f => f.Substring(0, f.IndexOf("-")));
+    var groups = Directory.EnumerateFiles(resourceDir).GroupBy(f => Path.GetFileName(f).Substring(0, Path.GetFileName(f).IndexOf("-")));
 
     await ValueTaskEx.WhenAll(groups.Select(group =>
         ConcatFilesAsync(group, dir)
@@ -88,5 +88,5 @@ static async ValueTask ConcatFilesAsync(IGrouping<string, string> group, Directo
         using var srcStream = File.OpenRead(item);
         await srcStream.CopyToAsync(destStream);
     }
-    
+
 }
