@@ -8,7 +8,7 @@ using ZLogger;
 
 internal class Terraform
 {
-    private static readonly string NEW_STAE_FILE;
+    private static readonly string NEW_STATE_FILE;
     private const string RESOURCE_IDENTIFIER_CSV = "resource_identifier.csv";
 
     private static readonly string NEW_TERRAFORM_DIR;
@@ -31,8 +31,8 @@ internal class Terraform
         var table = TOML.Parse(reader);
 
         OLD_STATE_FILES = table["tfstate"]["old_state_files"].AsArray.Children.AsEnumerable<TomlNode>().Select(node => node.ToString()!);
-        NEW_TERRAFORM_DIR = table["tfstate"]["import_dir"].AsString;
-        NEW_STAE_FILE = table["tfstate"]["new_state_file"].AsString;
+        NEW_TERRAFORM_DIR = table["tfstate"]["new_terraform_dir"].AsString;
+        NEW_STATE_FILE = table["tfstate"]["new_state_file"].AsString;
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ internal class Terraform
     /// <returns>リソース定義の列挙</returns>
     internal async IAsyncEnumerable<string> StateListAsync()
     {
-        await foreach (var r in ProcessX.StartAsync($"terraform -chdir={NEW_TERRAFORM_DIR} state list -state {NEW_STAE_FILE}"))
+        await foreach (var r in ProcessX.StartAsync($"terraform -chdir={NEW_TERRAFORM_DIR} state list -state {NEW_STATE_FILE}"))
         {
             if (r.StartsWith("data.")) { continue; }
             yield return r;
@@ -98,7 +98,7 @@ internal class Terraform
     private static async ValueTask WriteToFile(string res, DirectoryInfo newResourceDir)
     {
         var newTfFile = $"{res.Replace('.', '-')}.tf";
-        await foreach (var line in ProcessX.StartAsync($"terraform -chdir={NEW_TERRAFORM_DIR} state show -no-color -state {NEW_STAE_FILE} {res}"))
+        await foreach (var line in ProcessX.StartAsync($"terraform -chdir={NEW_TERRAFORM_DIR} state show -no-color -state {NEW_STATE_FILE} {res}"))
         {
             await File.AppendAllTextAsync(Path.Combine(newResourceDir.FullName, newTfFile), line + Environment.NewLine);
         }
