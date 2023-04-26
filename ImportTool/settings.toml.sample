@@ -1,0 +1,8 @@
+# 設定ファイル
+
+[tfstate]
+new_terraform_dir = "インポート対象のリソース定義のあるディレクトリへのパス"
+new_state_file = "インポート対象の新しいtfstateファイル名"
+old_state_files = [
+  "比較する既存tfstateファイルへのパス"
+]
